@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<link rel="manifest" href="manifest.json">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diario de trading</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#EEF2F4;--panel:#FFFFFF;--ink:#13222C;--mute:#5B6B75;--line:#D5DEE3;--gain:#0B7A68;--loss:#B3402A;--warn:#D49A00;--accent:#13222C;--onaccent:#FFFFFF;--gainbg:#DDF1EC;--lossbg:#F7E2DC;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E171D;--panel:#16232B;--ink:#E8EFF2;--mute:#92A3AD;--line:#27373F;--gain:#4CCDB2;--loss:#F28D6F;--warn:#F2C14E;--accent:#E8EFF2;--onaccent:#0E171D;--gainbg:#12352F;--lossbg:#3A211A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E171D;--panel:#16232B;--ink:#E8EFF2;--mute:#92A3AD;--line:#27373F;--gain:#4CCDB2;--loss:#F28D6F;--warn:#F2C14E;--accent:#E8EFF2;--onaccent:#0E171D;--gainbg:#12352F;--lossbg:#3A211A;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:20px;font-weight:800;margin:0 0 12px}
+.hero{background:var(--accent);color:var(--onaccent);border-radius:14px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hero small{display:block;opacity:.7;font-size:12px}
+.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.hero .big.neg{color:#F6A58C}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+input[type=number],input[type=date],input[type=time],input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:44px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{font:inherit;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--onaccent);border-color:var(--accent);font-weight:600}
+.seg.res button.g{color:var(--gain);border-color:var(--gain);background:var(--gainbg)}
+.seg.res button.p{color:var(--loss);border-color:var(--loss);background:var(--lossbg)}
+.seg.res button.g[aria-pressed=true]{background:var(--gain);border-color:var(--gain);color:var(--bg)}
+.seg.res button.p[aria-pressed=true]{background:var(--loss);border-color:var(--loss);color:var(--bg)}
+.preview{margin:4px 0 12px;padding:10px;border-radius:8px;background:var(--bg);font-size:14px}
+.cta{width:100%;min-height:48px;font:inherit;font-weight:600;border:0;border-radius:10px;background:var(--accent);color:var(--onaccent);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
+.tabs{display:flex;gap:6px;margin-top:14px}
+.tabs.in{margin:0 0 14px}
+.tabs button{flex:1;min-height:44px;padding:0 4px;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--bg);color:var(--mute);border-radius:10px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--onaccent);border-color:var(--accent);font-weight:600}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--mute);font-size:12.5px}
+.g{color:var(--gain)}.p{color:var(--loss)}
+.gc{display:inline-flex;align-items:center;gap:6px}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.tag.g{background:var(--gainbg)}.tag.p{background:var(--lossbg)}
+.empty{color:var(--mute);padding:14px 0;text-align:center}
+.note{font-size:12.5px;color:var(--mute);margin-top:10px}
+.del{background:none;border:0;color:var(--mute);cursor:pointer;font-size:18px;min-width:36px;min-height:36px}
+.linkbtn{background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer;min-height:36px}
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+.dlgbox{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:340px;width:100%}
+.dlgbox p{margin:0 0 14px}
+.dlgbox .seg button.danger{background:var(--loss);border-color:var(--loss);color:var(--bg);font-weight:600}
+.info{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:4px;padding:0;border-radius:50%;border:1.5px solid currentColor;background:none;color:inherit;font:inherit;font-size:13px;font-weight:800;line-height:1;cursor:pointer;vertical-align:middle;opacity:.8}
+.info:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
+.infobox p{margin:0 0 10px;font-size:14px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;margin:0;font-size:15px;color:var(--ink)}
+.chk input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.chk input:disabled+span{color:var(--mute)}
+.optrow{display:flex;align-items:center;gap:4px}
+.hint{font-size:13px;color:var(--mute);margin:0 0 10px}
+input[readonly]{opacity:.75}
+.tag.mg{background:var(--bg);border:1px solid var(--warn);color:var(--ink)}
+.tag.ci{background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+h3{font-size:14px;margin:16px 0 6px}
+@media (min-width:1000px){
+.wrap{max-width:1240px;display:grid;grid-template-columns:420px minmax(0,1fr);column-gap:18px;align-items:start;padding:24px 24px 48px}
+h1{grid-column:1/-1;font-size:24px}
+.hero{grid-column:1/-1;grid-template-columns:repeat(4,1fr);align-items:center;padding:20px 24px}
+.big{font-size:32px}
+#entry{grid-column:1;grid-row:3/span 2;position:sticky;top:16px}
+#viewTabs{grid-column:2;grid-row:3;margin-top:12px}
+#view{grid-column:2;grid-row:4}
+.note,.foot{grid-column:1/-1}
+table{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Diario de trading</h1>
+
+  <div class="hero">
+    <div><small>Saldo actual</small><div class="big" id="hBal">$0.00</div></div>
+    <div><small>Resultado neto</small><div class="big" id="hNet">$0.00</div></div>
+    <div><small>Acierto total <button type="button" class="info" data-i="acierto" aria-label="Más información">!</button></small><div id="hGauge"></div><div class="big" id="hRate">0%</div></div>
+    <div><small>Operaciones</small><div class="big" id="hOps">0</div></div>
+  </div>
+
+  <div class="panel" id="entry">
+    <div class="tabs in" id="entryTabs" role="tablist">
+      <button role="tab" data-t="op" aria-selected="true">Operación</button>
+      <button role="tab" data-t="mv" aria-selected="false">Depósitos y retiros</button>
+      <button role="tab" data-t="ini" aria-selected="false">Saldo inicial</button>
+    </div>
+
+    <div id="p-op">
+      <div class="row">
+        <div><label for="date">Fecha</label><input type="date" id="date"></div>
+        <div><label for="time">Hora</label><input type="time" id="time"></div>
+      </div>
+      <label for="pair">Par de divisas</label>
+      <input type="text" id="pair" placeholder="Ej: EUR/USD" maxlength="12" autocomplete="off" autocapitalize="characters" style="margin-bottom:10px">
+      <label>Tipo</label>
+      <div class="seg res" id="dirSeg"><button type="button" class="g" data-v="Compra" aria-pressed="true">Compra</button><button type="button" class="p" data-v="Venta" aria-pressed="false">Venta</button></div>
+      <div style="height:10px"></div>
+      <div class="optrow"><label class="chk"><input type="checkbox" id="ci"><span>Interés compuesto</span></label><button type="button" class="info" data-i="ci" aria-label="Más información">!</button></div>
+      <div id="ciBox" hidden style="margin-bottom:10px"><label for="cip">Porcentaje del saldo actual (%)</label><input type="number" id="cip" inputmode="decimal" step="0.1" min="0" placeholder="10"></div>
+      <div class="optrow"><label class="chk"><input type="checkbox" id="mg"><span>Martingala</span></label><button type="button" class="info" data-i="mg" aria-label="Más información">!</button></div>
+      <p class="hint" id="mgHint"></p>
+      <div class="row">
+        <div><label for="amount">Monto de apertura</label><input type="number" id="amount" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label for="pct">Ganancia del bróker (% del monto) <button type="button" class="info" data-i="op" aria-label="Más información">!</button></label><input type="number" id="pct" inputmode="decimal" step="0.1" min="0" placeholder="90"></div>
+      </div>
+      <label>Resultado <button type="button" class="info" data-i="op" aria-label="Más información">!</button></label>
+      <div class="seg res" id="resSeg"><button type="button" class="g" data-v="1" aria-pressed="true">Ganancia</button><button type="button" class="p" data-v="0" aria-pressed="false">Pérdida</button></div>
+      <div class="preview" id="preview">Ingresa el monto y el porcentaje para ver el cálculo.</div>
+      <button class="cta" id="add" type="button">Guardar operación</button>
+    </div>
+
+    <div id="p-mv" hidden>
+      <div class="row">
+        <div><label for="mdate">Fecha</label><input type="date" id="mdate"></div>
+        <div><label for="mtime">Hora</label><input type="time" id="mtime"></div>
+      </div>
+      <div class="row">
+        <div><label>Movimiento</label><div class="seg" id="mvSeg"><button type="button" data-v="Depósito" aria-pressed="true">Depósito</button><button type="button" data-v="Retiro" aria-pressed="false">Retiro</button></div></div>
+        <div><label for="mamount">Monto</label><input type="number" id="mamount" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="preview" id="mvMsg">Ingresa el monto para guardar el movimiento.</div>
+      <button class="cta" id="addMove" type="button">Guardar movimiento</button>
+      <h3>Historial de depósitos y retiros</h3>
+      <div class="scroll" id="mvList"></div>
+    </div>
+
+    <div id="p-ini" hidden>
+      <label for="initial">Saldo inicial de la cuenta</label>
+      <input type="number" id="initial" inputmode="decimal" step="0.01" min="0" placeholder="Ej: 500">
+    </div>
+  </div>
+
+  <div class="tabs" id="viewTabs" role="tablist">
+    <button role="tab" data-t="ops" aria-selected="true">Operaciones</button>
+    <button role="tab" data-t="day" aria-selected="false">Por día</button>
+    <button role="tab" data-t="mon" aria-selected="false">Por mes</button>
+    <button role="tab" data-t="bal" aria-selected="false">Saldos</button>
+  </div>
+  <div class="panel scroll" id="view"></div>
+  <p class="note"><b>Aviso:</b> esta app no es una herramienta para operar en bolsa ni una herramienta de inversión. Los usuarios no ingresan ningún dato bancario ni información de pago. Solo sirve para llevar el registro de las operaciones que se realizan en otras aplicaciones.</p>
+  <div class="foot" style="text-align:right"><button class="linkbtn" id="reset" type="button">Borrar todos los datos</button></div>
+</div>
+
+<div class="dlg" id="dlg" hidden role="alertdialog" aria-modal="true" aria-labelledby="dlgMsg">
+  <div class="dlgbox"><p id="dlgMsg"></p>
+    <div class="seg"><button type="button" id="dlgNo">Cancelar</button><button type="button" class="danger" id="dlgYes">Eliminar</button></div></div>
+</div>
+<div class="dlg" id="inf" hidden role="dialog" aria-modal="true" aria-labelledby="infT">
+  <div class="dlgbox infobox"><h3 id="infT" style="margin-top:0"></h3><div id="infM"></div>
+    <button type="button" class="cta" id="infOk">Entendido</button></div>
+</div>
+<script>
+(function(){
+var KEY='diario-trading-v1';
+var S={initial:0,trades:[],moves:[],lastPct:'',nextId:1};
+try{var raw=localStorage.getItem(KEY);if(raw){S=Object.assign(S,JSON.parse(raw));}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+var MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var nf=new Intl.NumberFormat('es',{minimumFractionDigits:2,maximumFractionDigits:2});
+function money(v){return (v<0?'-':'')+'$'+nf.format(Math.abs(v));}
+function signed(v){return (v>0?'+':v<0?'-':'')+'$'+nf.format(Math.abs(v));}
+function cls(v){return v>0?'g':v<0?'p':'';}
+function fdate(iso){var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function fmonth(k){var p=k.split('-');return MESES[+p[1]-1]+' '+p[0];}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nowT(){var d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function r2(x){return Math.round(x*100)/100;}
+function gain(t){return r2(t.amount*t.pct/100);}
+function net(t){return t.win?gain(t):-t.amount;}
+function dt(x){return fdate(x.date)+(x.time?' '+x.time:'');}
+
+/* Indicador de aguja: rojo 0-33.33, amarillo 33.34-66.67, verde 66.68-100 */
+function pt(p,r){var a=Math.PI*(1-p/100);return [100+r*Math.cos(a),100-r*Math.sin(a)];}
+function arc(p1,p2,col){var a=pt(p1,80),b=pt(p2,80);return '<path d="M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+' A80 80 0 0 1 '+b[0].toFixed(1)+' '+b[1].toFixed(1)+'" stroke="'+col+'" stroke-width="16" fill="none"/>';}
+function gauge(p,w,needle){
+  var n=pt(p,66);
+  return '<svg viewBox="0 0 200 112" width="'+w+'" role="img" aria-label="Acierto '+p+'%" style="display:block;color:'+needle+'">'+arc(0,33.33,'var(--loss)')+arc(33.33,66.67,'var(--warn)')+arc(66.67,100,'var(--gain)')+'<line x1="100" y1="100" x2="'+n[0].toFixed(1)+'" y2="'+n[1].toFixed(1)+'" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><circle cx="100" cy="100" r="9" fill="currentColor"/></svg>';
+}
+
+var INFO={
+ acierto:{t:'Cómo se calcula el acierto',m:'<p>Acierto = operaciones ganadas ÷ total de operaciones × 100.</p><p>Ejemplo: 6 ganadas de 10 operaciones dan 60% de acierto. Cada ganancia lo sube y cada pérdida lo baja.</p><p>La aguja apunta al color según ese porcentaje: <b class="p">rojo</b> de 0% a 33.33%, <b style="color:var(--warn)">amarillo</b> de 33.34% a 66.67% y <b class="g">verde</b> de 66.68% a 100%.</p><p>En "Por día" y "Por mes" se calcula solo con las operaciones de ese día o ese mes.</p>'},
+ ci:{t:'Interés compuesto',m:'<p>Al activarla e ingresar un porcentaje, el monto de apertura se calcula solo: es ese porcentaje de tu saldo actual, el que aparece en el resumen.</p><p>Ejemplo: con un saldo de $200 y 10%, el monto es $20. Después de cada operación el saldo cambia y el monto se recalcula.</p><p>No se puede usar al mismo tiempo que la Martingala.</p>'},
+ mg:{t:'Martingala',m:'<p>Solo se puede activar cuando la última operación registrada fue una pérdida. Toma el monto de esa pérdida y lo duplica para la nueva operación.</p><p>Es un método riesgoso: una racha de pérdidas puede agotar tu saldo muy rápido.</p><p>No se puede usar al mismo tiempo que el interés compuesto.</p>'},
+ op:{t:'Cómo se calcula cada operación',m:'<p>El porcentaje del bróker se aplica sobre el monto de apertura de la operación, no sobre la cantidad de operaciones.</p><p>Si ganas: ganancia = monto × porcentaje, sin contar tu inversión. Con 1 dólar al 90% ganas 0.90 dólares.</p><p>Si pierdes: pierdes el monto completo. Con 1 dólar pierdes 1 dólar.</p><p>El resultado neto es la suma de las ganancias menos las pérdidas.</p>'}
+};
+function ib(k){return '<button type="button" class="info" data-i="'+k+'" aria-label="Más información">!</button>';}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.info');
+  if(b){var i=INFO[b.dataset.i];$('infT').textContent=i.t;$('infM').innerHTML=i.m;$('inf').hidden=false;$('infOk').focus();return;}
+  if(e.target===$('inf')||e.target===$('infOk'))$('inf').hidden=true;
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')$('inf').hidden=true;});
+var dir='Compra',win=1,mv='Depósito',tab='ops',balMode='day';
+$('date').value=today();$('time').value=nowT();$('mdate').value=today();$('mtime').value=nowT();
+$('initial').value=S.initial||'';
+$('pct').value=S.lastPct;
+
+function seg(id,cb){
+  $(id).addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    Array.prototype.forEach.call($(id).children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+    cb(b.dataset.v);
+  });
+}
+seg('dirSeg',function(v){dir=v;});
+seg('mvSeg',function(v){mv=v;});
+seg('resSeg',function(v){win=+v;preview();});
+function tabs(id,cb){
+  var el=$(id);
+  el.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    Array.prototype.forEach.call(el.children,function(x){x.setAttribute('aria-selected',x===b?'true':'false');});
+    cb(b.dataset.t);
+  });
+}
+tabs('entryTabs',function(t){['op','mv','ini'].forEach(function(k){$('p-'+k).hidden=(k!==t);});});
+tabs('viewTabs',function(t){tab=t;render();});
+
+function preview(){
+  var a=parseFloat($('amount').value),p=parseFloat($('pct').value),el=$('preview');
+  if(!(a>0)||!(p>=0)){el.textContent='Ingresa el monto y el porcentaje para ver el cálculo.';return;}
+  var g=r2(a*p/100);
+  if(win)el.innerHTML='Ganancia sin tu inversión: <b class="g">+'+money(g)+'</b>. Recibes '+money(a+g)+' en total.';
+  else el.innerHTML='Pérdida: <b class="p">-'+money(a)+'</b>.';
+}
+$('amount').addEventListener('input',preview);
+$('pct').addEventListener('input',preview);
+$('initial').addEventListener('input',function(){S.initial=Math.max(0,parseFloat(this.value)||0);save();render();});
+
+function lastTrade(){var l=null;S.trades.forEach(function(t){if(!l||t.id>l.id)l=t;});return l;}
+function curBal(){
+  var tot=S.trades.reduce(function(x,t){return x+net(t);},0);
+  var m=S.moves.reduce(function(x,v){return x+(v.type==='Depósito'?v.amount:-v.amount);},0);
+  return r2(S.initial+tot+m);
+}
+function syncAmt(){
+  var ci=$('ci').checked,mgOn=$('mg').checked,a=$('amount'),lt=lastTrade(),canMg=!!lt&&!lt.win;
+  $('ciBox').hidden=!ci;
+  if(mgOn&&!canMg){$('mg').checked=false;mgOn=false;a.value='';}
+  $('mg').disabled=!canMg;
+  $('mgHint').textContent=mgOn?'Última pérdida: '+money(lt.amount)+'. El nuevo monto es el doble: '+money(r2(lt.amount*2))+'.':(canMg?'Puedes activarla: la última operación registrada fue una pérdida.':'Disponible solo cuando la última operación registrada fue una pérdida.');
+  if(ci){var pc=parseFloat($('cip').value),b=curBal();a.value=(pc>0&&b>0)?r2(b*pc/100):'';}
+  else if(mgOn){a.value=r2(lt.amount*2);}
+  a.readOnly=ci||mgOn;
+  preview();
+}
+$('ci').addEventListener('change',function(){if(this.checked)$('mg').checked=false;syncAmt();});
+$('cip').addEventListener('input',syncAmt);
+$('mg').addEventListener('change',function(){
+  if(this.checked){
+    this.checked=false;
+    ask('Advertencia: la Martingala es un método riesgoso. Duplicar el monto después de cada pérdida puede agotar tu saldo muy rápido si hay varias pérdidas seguidas. ¿Quieres activarla?','Activar',function(){$('mg').checked=true;$('ci').checked=false;syncAmt();});
+  }else syncAmt();
+});
+$('add').addEventListener('click',function(){
+  var a=parseFloat($('amount').value),p=parseFloat($('pct').value),d=$('date').value;
+  if(!d){$('preview').textContent='Elige la fecha de la operación.';return;}
+  var pr=$('pair').value.trim().toUpperCase();
+  if(!pr){$('preview').textContent='Ingresa el par de divisas de la operación.';$('pair').focus();return;}
+  if($('ci').checked&&!(parseFloat($('cip').value)>0)){$('preview').textContent='Ingresa el porcentaje de interés compuesto.';$('cip').focus();return;}
+  if(!(a>0)){$('preview').textContent='Ingresa un monto de apertura mayor que cero.';$('amount').focus();return;}
+  if(!(p>=0)||isNaN(p)){$('preview').textContent='Ingresa el porcentaje de ganancia del bróker.';$('pct').focus();return;}
+  S.trades.push({id:S.nextId++,date:d,time:$('time').value,pair:pr,dir:dir,amount:a,pct:p,win:win,ci:$('ci').checked?(parseFloat($('cip').value)||0):0,mg:$('mg').checked?1:0});
+  S.lastPct=p;save();$('time').value=nowT();
+  $('amount').value='';render();
+  $('preview').textContent='Operación guardada.';
+});
+$('addMove').addEventListener('click',function(){
+  var a=parseFloat($('mamount').value),d=$('mdate').value;
+  if(!d){$('mvMsg').textContent='Elige la fecha del movimiento.';return;}
+  if(!(a>0)){$('mvMsg').textContent='Ingresa un monto mayor que cero.';$('mamount').focus();return;}
+  S.moves.push({id:S.nextId++,date:d,time:$('mtime').value,type:mv,amount:a});
+  save();$('mamount').value='';$('mtime').value=nowT();render();$('mvMsg').textContent='Movimiento guardado.';
+});
+var dlgCb=null;
+function ask(msg,label,cb){$('dlgMsg').textContent=msg;$('dlgYes').textContent=label;dlgCb=cb;$('dlg').hidden=false;$('dlgNo').focus();}
+$('dlgNo').addEventListener('click',function(){$('dlg').hidden=true;dlgCb=null;});
+$('dlgYes').addEventListener('click',function(){$('dlg').hidden=true;var f=dlgCb;dlgCb=null;if(f)f();});
+function onDel(e){
+  var b=e.target.closest('.del');if(!b)return;
+  var id=+b.dataset.id;
+  var isT=S.trades.some(function(t){return t.id===id;});
+  ask(isT?'¿Eliminar esta operación? Esta acción no se puede deshacer.':'¿Eliminar este depósito o retiro? Esta acción no se puede deshacer.','Eliminar',function(){
+    S.trades=S.trades.filter(function(t){return t.id!==id;});S.moves=S.moves.filter(function(m){return m.id!==id;});save();render();
+  });
+}
+$('view').addEventListener('click',function(e){
+  var b=e.target.closest('[data-bm]');
+  if(b){balMode=b.dataset.bm;render();return;}
+  onDel(e);
+});
+$('mvList').addEventListener('click',onDel);
+$('reset').addEventListener('click',function(){
+  ask('¿Borrar todas las operaciones, los movimientos y el saldo inicial? Esta acción no se puede deshacer.','Borrar todo',function(){
+    S={initial:0,trades:[],moves:[],lastPct:'',nextId:1};save();$('initial').value='';$('pct').value='';render();
+  });
+});
+
+function items(){
+  var a=S.trades.map(function(t){return Object.assign({k:'t'},t);}).concat(S.moves.map(function(m){return Object.assign({k:'m'},m);}));
+  return a.sort(function(x,y){var kx=x.date+(x.time||''),ky=y.date+(y.time||'');return kx<ky?-1:kx>ky?1:x.id-y.id;});
+}
+function delta(it){return it.k==='t'?net(it):(it.type==='Depósito'?it.amount:-it.amount);}
+function group(keyFn){
+  var bal=S.initial,map={},order=[];
+  items().forEach(function(it){
+    var k=keyFn(it.date);
+    if(!map[k]){map[k]={k:k,ops:0,w:0,l:0,net:0,dep:0,ret:0,open:bal,close:bal};order.push(k);}
+    var g=map[k],d=delta(it);
+    if(it.k==='t'){g.ops++;it.win?g.w++:g.l++;g.net=r2(g.net+d);}
+    else if(d>0)g.dep=r2(g.dep+d);else g.ret=r2(g.ret-d);
+    bal=r2(bal+d);g.close=bal;
+  });
+  return order.map(function(k){return map[k];});
+}
+function rate(w,n){return n?Math.round(w/n*1000)/10:0;}
+function rateCell(w,n){var r=rate(w,n);return '<span class="gc">'+gauge(r,56,'var(--ink)')+r+'%</span>';}
+function table(head,rows){return '<table><thead><tr>'+head.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';}
+
+function render(){
+  var T=S.trades,w=T.filter(function(t){return t.win;}).length;
+  var tot=r2(T.reduce(function(s,t){return s+net(t);},0));
+  var mvt=r2(S.moves.reduce(function(s,m){return s+delta(Object.assign({k:'m'},m));},0));
+  var r=rate(w,T.length);
+  $('hBal').textContent=money(r2(S.initial+tot+mvt));
+  $('hRate').textContent=r+'%';
+  $('hGauge').innerHTML=gauge(r,130,'var(--onaccent)');
+  var hn=$('hNet');hn.textContent=signed(tot);hn.className='big'+(tot<0?' neg':'');
+  $('hOps').textContent=T.length;
+  syncAmt();
+
+  var ml=S.moves.slice().sort(function(a,b){var x=a.date+(a.time||''),y=b.date+(b.time||'');return x<y?1:x>y?-1:b.id-a.id;});
+  $('mvList').innerHTML=ml.length?table(['Fecha y hora','Tipo','Monto',''],ml.map(function(m){
+    return '<tr><td>'+dt(m)+'</td><td><span class="tag '+(m.type==='Depósito'?'g':'p')+'">'+m.type+'</span></td><td>'+money(m.amount)+'</td><td><button class="del" data-id="'+m.id+'" aria-label="Eliminar movimiento">×</button></td></tr>';
+  }).join('')):'<div class="empty">Aún no hay depósitos ni retiros.</div>';
+
+  var v=$('view'),h='';
+  if(tab==='ops'){
+    if(!T.length){v.innerHTML='<div class="empty">Aún no hay operaciones. Guarda la primera arriba.</div>';return;}
+    var ts=T.slice().sort(function(a,b){var x=a.date+(a.time||''),y=b.date+(b.time||'');return x<y?1:x>y?-1:b.id-a.id;});
+    v.innerHTML=table(['Fecha y hora','Par','Tipo','Monto','%','Ganancia','Resultado',''],ts.map(function(t){
+      return '<tr><td>'+dt(t)+'</td><td>'+(t.pair?esc(t.pair):'—')+'</td><td>'+t.dir+'</td><td>'+money(t.amount)+'</td><td>'+t.pct+'%</td><td class="'+(t.win?'g':'')+'">'+(t.win?'+'+money(gain(t)):'—')+'</td><td><span class="tag '+(t.win?'g':'p')+'">'+(t.win?'Ganó ':'Perdió ')+signed(net(t))+'</span>'+(t.mg?' <span class="tag mg">Martingala</span>':'')+(t.ci?' <span class="tag ci">Int. compuesto '+t.ci+'%</span>':'')+'</td><td><button class="del" data-id="'+t.id+'" aria-label="Eliminar operación">×</button></td></tr>';
+    }).join(''));
+    return;
+  }
+  if(tab==='bal'){
+    var rows=group(balMode==='day'?function(d){return d;}:function(d){return d.slice(0,7);}).reverse();
+    h='<div class="seg" style="max-width:260px;margin-bottom:10px"><button type="button" data-bm="day" aria-pressed="'+(balMode==='day')+'">Por día</button><button type="button" data-bm="mon" aria-pressed="'+(balMode==='mon')+'">Por mes</button></div>';
+    h+=rows.length?table([balMode==='day'?'Día':'Mes','Saldo inicial','Depósitos','Retiros','Neto operaciones','Saldo final'],rows.map(function(g){
+      return '<tr><td>'+(balMode==='day'?fdate(g.k):fmonth(g.k))+'</td><td>'+money(g.open)+'</td><td class="'+(g.dep?'g':'')+'">'+(g.dep?'+'+money(g.dep):'—')+'</td><td class="'+(g.ret?'p':'')+'">'+(g.ret?'-'+money(g.ret):'—')+'</td><td class="'+cls(g.net)+'">'+(g.ops?signed(g.net):'—')+'</td><td><b>'+money(g.close)+'</b></td></tr>';
+    }).join('')):'<div class="empty">Aún no hay registros.</div>';
+    v.innerHTML=h;return;
+  }
+  var gr=group(tab==='day'?function(d){return d;}:function(d){return d.slice(0,7);}).filter(function(g){return g.ops>0;}).reverse();
+  v.innerHTML=gr.length?table([tab==='day'?'Día':'Mes','Ops','G / P','Acierto '+ib('acierto'),'Neto'],gr.map(function(g){
+    return '<tr><td>'+(tab==='day'?fdate(g.k):fmonth(g.k))+'</td><td>'+g.ops+'</td><td><span class="g">'+g.w+'</span> / <span class="p">'+g.l+'</span></td><td>'+rateCell(g.w,g.ops)+'</td><td class="'+cls(g.net)+'">'+signed(g.net)+'</td></tr>';
+  }).join('')):'<div class="empty">Aún no hay operaciones.</div>';
+}
+preview();render();
+})();
+</script>
+</body>
+</html>
